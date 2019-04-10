@@ -44,6 +44,7 @@ fn index(_req: &HttpRequest) -> &'static str {
 /// extract path info from "/users/{userid}/{friend}" url
 /// {number} -  - deserializes to a u32
 fn echo_handler(msg: Path<Echo>) -> Result<String> {
+    println!("Entró ");
     Ok(format!("{}", msg.message))
 }
 

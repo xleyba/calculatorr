@@ -21,10 +21,9 @@ struct Echo {
 
 fn factorial_iterative(n: i32) -> BigInt {
     let mut result = 1.to_bigint().unwrap();
-    for x in 1..=n {
-        result = result * x.to_bigint().unwrap();
+    for x in 2..=n {
+        result = result * x;
     }
-
     return result
 }
 

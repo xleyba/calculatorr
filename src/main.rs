@@ -1,7 +1,5 @@
 #[macro_use] extern crate serde_derive;
-extern crate num;
-use num::bigint::BigInt;
-use num::bigint::ToBigInt;
+use rug::{Assign, Integer};
 use actix_web::{App, Path, Result, http, server, HttpRequest};
 use std::env;
 use colored::*;
@@ -19,19 +17,19 @@ struct Echo {
 }
 
 
-fn factorial_iterative(n: i32) -> BigInt {
-    let mut result = 1.to_bigint().unwrap();
-    for x in 2..=n {
+fn factorial_iterative(n: i32) -> Integer {
+    let mut result = Integer::from(n);
+    for x in 2..n {
         result = result * x;
     }
     return result
 }
 
-fn factorial_recursive(n: i32) -> BigInt {
+fn factorial_recursive(n: i32) -> Integer {
     if n <= 1 {
-        return 1.to_bigint().unwrap()
+        return Integer::from(1)
     } else {
-        return n.to_bigint().unwrap() * factorial_recursive(n - 1)
+        return Integer::from(n) * factorial_recursive(n - 1)
     }
 }
 

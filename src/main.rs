@@ -19,7 +19,7 @@ struct Echo {
 
 fn factorial_iterative(n: i32) -> Integer {
     let mut result = Integer::from(n);
-    for x in 2..n {
+    for x in 2..=n {
         result = result * x;
     }
     return result
@@ -41,7 +41,6 @@ fn index(_req: &HttpRequest) -> &'static str {
 /// extract path info from "/users/{userid}/{friend}" url
 /// {number} -  - deserializes to a u32
 fn echo_handler(msg: Path<Echo>) -> Result<String> {
-    println!("Entró ");
     Ok(format!("{}", msg.message))
 }
 

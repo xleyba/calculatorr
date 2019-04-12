@@ -18,7 +18,7 @@ struct Echo {
 
 
 fn factorial_iterative(n: i32) -> Integer {
-    let mut result = Integer::from(n);
+    let mut result = Integer::from(1);
     for x in 2..=n {
         result = result * x;
     }

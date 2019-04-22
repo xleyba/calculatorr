@@ -34,7 +34,7 @@ struct ConfigWorkers {
 // Displays intro banner
 fn intro() {
     println!("{}", "===========================================================".yellow().bold());
-    println!("{}", "                    Calculator v 0.2.0".yellow().bold());
+    println!("{}", "                    Calculator v 0.2.1".yellow().bold());
     println!("{}", "===========================================================".yellow().bold());
     println!("{}", "   Please use env variables for configuration:".yellow().bold());
     println!("{}", "       CALC_PORT=port number".yellow().bold());

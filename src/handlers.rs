@@ -16,6 +16,7 @@ pub struct Echo {
     message: String,
 }
 
+// Calculates factorial iteratively
 fn factorial_iterative(n: u32) -> Integer {
     let mut result = Integer::from(n);
     for x in 2..n {
@@ -24,6 +25,7 @@ fn factorial_iterative(n: u32) -> Integer {
     return result
 }
 
+// Calculates factorial recursively
 fn factorial_recursive(n: u32) -> Integer {
     if n <= 1 {
         return Integer::from(1)
@@ -31,7 +33,6 @@ fn factorial_recursive(n: u32) -> Integer {
         return Integer::from(n) * factorial_recursive(n - 1)
     }
 }
-
 
 // Handle index route
 pub fn index() -> &'static str {
@@ -41,8 +42,8 @@ pub fn index() -> &'static str {
 /// extract path info from "/users/{userid}/{friend}" url
 /// {number} -  - deserializes to a u32
 pub fn echo_handler(msg: Path<Echo>) -> Result<String> {
-    println!("Entró ");
     let message = msg.message.clone();
+    debug!("Received message: {}", message);
     Ok(format!("{}", message))
 }
 
@@ -50,6 +51,7 @@ pub fn echo_handler(msg: Path<Echo>) -> Result<String> {
 /// {number} -  - deserializes to a u32
 pub fn factorial_iter_handler(number: Path<Number>) -> Result<String> {
     let n = number.number;
+    debug!("Received number: {}", n);
     Ok(format!("{}", factorial_iterative(n)))
 }
 
@@ -57,5 +59,6 @@ pub fn factorial_iter_handler(number: Path<Number>) -> Result<String> {
 /// {number} -  - deserializes to a u32
 pub fn factorial_recur_handler(number: Path<Number>) -> Result<String> {
     let n = number.number;
+    debug!("Received number: {}", n);
     Ok(format!("{}", factorial_recursive(n)))
 }

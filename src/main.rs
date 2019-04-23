@@ -1,138 +1,120 @@
+#[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
-use rug::{Assign, Integer};
-use actix_web::{App, Path, Result, http, server, HttpRequest};
-use std::env;
+
+use actix_web::{App, web, HttpServer};
+
 use colored::*;
+use log::{debug};
+use log::Level;
 
+mod handlers;
+use crate::handlers::index;
+use crate::handlers::echo_handler;
+use crate::handlers::factorial_iter_handler;
+use crate::handlers::factorial_recur_handler;
 
+// Defines the default port
+const DEFAULT_PORT: u16          = 9596;
 
-#[derive(Deserialize)]
-struct Number {
-    number: i32,
+// Defines the workers used by server
+const DEFAULT_WORKERS: usize     = 2;
+
+// Config port
+#[derive(Deserialize, Debug)]
+struct ConfigPort {
+    port: u16,
 }
 
-#[derive(Deserialize)]
-struct Echo {
-    message: String,
+// Config Workers
+#[derive(Deserialize, Debug)]
+struct ConfigWorkers {
+    workers: usize,
 }
 
-
-fn factorial_iterative(n: i32) -> Integer {
-    let mut result = Integer::from(1);
-    for x in 2..=n {
-        result = result * x;
-    }
-    return result
-}
-
-fn factorial_recursive(n: i32) -> Integer {
-    if n <= 1 {
-        return Integer::from(1)
-    } else {
-        return Integer::from(n) * factorial_recursive(n - 1)
-    }
-}
-
-
-fn index(_req: &HttpRequest) -> &'static str {
-    "Hello world!"
-}
-
-/// extract path info from "/users/{userid}/{friend}" url
-/// {number} -  - deserializes to a u32
-fn echo_handler(msg: Path<Echo>) -> Result<String> {
-    Ok(format!("{}", msg.message))
-}
-
-/// extract path info from "/users/{userid}/{friend}" url
-/// {number} -  - deserializes to a u32
-fn factorial_iter_handler(number: Path<Number>) -> Result<String> {
-    let n = number.number;
-    Ok(format!("{}", factorial_iterative(n)))
-}
-
-/// extract path info from "/users/{userid}/{friend}" url
-/// {number} -  - deserializes to a u32
-fn factorial_recur_handler(number: Path<Number>) -> Result<String> {
-    let n = number.number;
-    Ok(format!("{}", factorial_recursive(n)))
-}
-
-fn main() {
-
-    let mut workers: usize = 2;
-    let mut port = 9596;
-
+// Displays intro banner
+fn intro() {
     println!("{}", "===========================================================".yellow().bold());
-    println!("{}", "                    Calculator v 0.1.0".yellow().bold());
+    println!("{}", "                    Calculator v 0.2.1".yellow().bold());
     println!("{}", "===========================================================".yellow().bold());
     println!("{}", "   Please use env variables for configuration:".yellow().bold());
     println!("{}", "       CALC_PORT=port number".yellow().bold());
     println!("{}", "       CALC_WORKERS=workers for server".yellow().bold());
+    println!("{}", "       CALC_CLIENT_URL=url of called service".yellow().bold());
     println!("{}", "-----------------------------------------------------------");
     println!("Starting configuration......\n");
+}
 
-    let key = "CALC_PORT";
-    println!("- Port:");
-    match env::var(key) {
-        Ok(val) => {
-            println!("... Config variable?:  {}", "exists!".green());
-            match val.as_str().parse::<u16>() {
-                Ok(n) => {
-                    println!("... Valid?:            {}", "Yes".to_string().green());
-                    println!("... Port set to:       {}", n.to_string().green());
-                    port = n;
-                },
-                Err(e) => {
-                    println!("... Valid?:            {} - {}", "No".red(), e.to_string().red());
-                    println!("... Port set to:       {} - (by default)", "9596".green());
-                },
-            }
-        }
-        Err(_e) => {
-            println!("... Config variable?:  {}", "No".red());
-            println!("... Port set to:       {} - (by default)", "9596".green());
-        }
-    } 
+// Configure port through env variables
+fn config_port() -> u16 {
+    match envy::prefixed("CALC_").from_env::<ConfigPort>() {
+      Ok(config) => {
+          info!("Port set to: {}", config.port);
+          config.port
+      },
+      Err(error) => {
+          error!("Error with env var PORT {}", error);
+          info!("Port set to {} - default value", DEFAULT_PORT);
+          DEFAULT_PORT
+      }
+   }
+}
 
-    let key = "CALC_WORKERS";
-    println!("\n- Workers:");
-    match env::var(key) {
-        Ok(val) => {
-            println!("... Config variable?:  {}", "exists!".green());
-            match val.as_str().parse::<usize>() {
-                Ok(n) => {
-                    println!("... Valid?:            {}", "Yes".to_string().green());
-                    println!("... Workers set to:    {}", n.to_string().green());
-                    workers = n;
-                },
-                Err(e) => {
-                    println!("... Valid?:            {} - {}", "No".red(), e.to_string().red());
-                    println!("... Workers set to:    {} - (by default)", "2".green());
-                },
-            }
-        }
-        Err(_e) => {
-            println!("... Config variable?:  {}", "No".red());
-            println!("... Workers set to:    {} - (by default)", "2".green());
-        },
-    } 
+// Configure workers through env variables
+fn config_workers() -> usize {
+    match envy::prefixed("CALC_").from_env::<ConfigWorkers>() {
+      Ok(config) => {
+          info!("Workers set to: {}", config.workers);
+          config.workers
+      },
+      Err(error) => {
+          error!("Error with env var WORKERS {}", error);
+          info!("Workers set to {} - default value", DEFAULT_WORKERS);
+          DEFAULT_WORKERS
+      }
+   }
+}
+
+
+
+fn main()  -> std::io::Result<()> {
+
+    env_logger::init();
+    /*Builder::new()
+        .parse(&env::var("BANK_LOG").unwrap_or_default())
+        .init();*/
+
+    intro();
+
+    let port = config_port();
+    let workers = config_workers();
 
     println!("{}", "-----------------------------------------------------------");
     println!("Starting server.... Press Ctrl-C to stop it.");
 
+    if log_enabled!(Level::Info) {
+        debug!("Starting server");
+    }
 
-    server::new(|| {App::new()
-        .resource("/", |r| r.f(index))
-        .resource("/echo/{message}",                        // <- define path parameters
-            |r| r.method(http::Method::GET).with(echo_handler))
-        .resource("/factorialIterative/{number}",                        // <- define path parameters
-            |r| r.method(http::Method::GET).with(factorial_iter_handler))
-        .resource("/factorialRecursive/{number}",                        // <- define path parameters
-            |r| r.method(http::Method::GET).with(factorial_recur_handler))
+    HttpServer::new(|| {App::new()
+        .service(
+            web::resource("/")
+                .route(web::get().to(index))
+        ) // end service
+        .service(
+            web::resource("/echo/{message}")
+            .route(web::get().to_async(echo_handler))
+        ) // end hello service
+        .service(
+            web::resource("factorialIterative/{number}")
+            .route(web::get().to_async(factorial_iter_handler))
+        ) // end iter service
+        .service(
+            web::resource("factorialRecursive/{number}")
+            .route(web::get().to_async(factorial_recur_handler))
+        ) // end recur service
     })
-    .bind(format!("{}{}", "127.0.0.1:", port))
-    .unwrap()
     .workers(workers)
-    .run();
+    .bind(format!("127.0.0.1:{}", port))?
+    .run()
+    
 }

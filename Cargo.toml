@@ -1,13 +1,16 @@
 [package]
-name = "calculator"
-version = "0.1.0"
+name = "calculatorr"
+version = "0.2.1"
 authors = ["Javier Leyba"]
 edition = "2018"
 publish = false
 
 [dependencies]
-actix-web = "0.7"
+actix-web = { version="1.0.0-alpha.6" }
 serde = "1.0.90"
 serde_derive = "1.0.90"
 colored = "1.7"
 rug = "1.3.0"
+envy = "0.4.0"
+log = "0.4.6"
+env_logger = "0.6.1"
